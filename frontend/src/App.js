@@ -4,6 +4,8 @@ import ActivePolls from './pages/ActivePolls';
 import CreatePoll from './pages/CreatePoll';
 import VotePage from './pages/VotePage';
 import ResultsPage from './pages/ResultsPage';
+import ClosedPolls from './pages/ClosedPolls';
+
 
 function App() {
   return (
@@ -12,6 +14,7 @@ function App() {
         <nav style={{ marginBottom: '20px' }}>
           <Link to="/" style={{ marginRight: '15px' }}>🗳️ Active Polls</Link>
           <Link to="/create">➕ Create Poll</Link>
+          <Link to="/closed" style={{ marginLeft: '15px' }}>📁 Closed Polls</Link>
         </nav>
 
         <Routes>
@@ -19,6 +22,7 @@ function App() {
           <Route path="/create" element={<CreatePoll />} />
           <Route path="/poll/:pollId" element={<VotePage />} />
           <Route path="/poll/:pollId/results" element={<ResultsPage />} />
+          <Route path="/closed" element={<ClosedPolls />} />
         </Routes>
       </div>
     </Router>
