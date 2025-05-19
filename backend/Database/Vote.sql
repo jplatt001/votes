@@ -26,4 +26,13 @@ CREATE TABLE votes (
   FOREIGN KEY (option_id) REFERENCES options(id)
 );
 
+-- pdate your polls table to include start_time and end_time for Timed Polls & Deadlines
+ALTER TABLE polls 
+ADD COLUMN start_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN end_time DATETIME;
+
+-- Update your polls table to include a type field for Multiple Question Types (Checkboxes/Multiple Choice)
+ALTER TABLE polls 
+ADD COLUMN type ENUM('single', 'multiple') DEFAULT 'single';
+
 
