@@ -1,82 +1,4 @@
-/*
-import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
-
-const VotePage = () => {
-  const { pollId } = useParams();
-  const [poll, setPoll] = useState(null);
-  const [selectedOption, setSelectedOption] = useState(null);
-  const [voted, setVoted] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    axios.get(`http://localhost:5000/api/polls/${pollId}`)
-      .then(res => {
-        setPoll(res.data);
-      })
-      .catch(err => console.error('Error fetching poll:', err));
-  }, [pollId]);
-
-  const handleVote = () => {
-    if (!selectedOption) {
-      return alert("Select an option first.");
-    }
-
-    setLoading(true); // Start loading
-
-    axios.post(`http://localhost:5000/api/polls/${pollId}/vote`, { optionId: selectedOption })
-      .then(() => {
-        setVoted(true);
-        setLoading(false); // Stop loading
-        alert('Vote recorded!');
-      })
-      .catch(err => {
-        console.error('Voting failed:', err);
-        alert('Voting failed. Please try again.');
-        setLoading(false); // Stop loading even on error
-      });
-  };
-
-  if (!poll) return <p>Loading poll...</p>;
-
-  return (
-    <div>
-      <h2>{poll.question}</h2>
-      {poll.options && poll.options.length > 0 ? (
-        poll.options.map(opt => (
-          <div key={opt.id}>
-            <input
-              type="radio"
-              name="option"
-              value={opt.id}
-              onChange={() => setSelectedOption(opt.id)}
-            />
-            {opt.option_text}
-          </div>
-        ))
-      ) : (
-        <p>No options available for this poll.</p>
-      )}
-
-      <button onClick={handleVote} disabled={loading}>
-        {loading ? 'Submitting...' : 'Submit Vote'}
-      </button>
-
-      {voted && (
-        <div style={{ marginTop: '20px' }}>
-*///          {/* No redirect, just show the results link */}
-/*          <Link to={`/poll/${pollId}/results`}>View Results</Link>
-        </div>
-      )}
-    </div>
-  );
-};
-
-export default VotePage;
-
-*/
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -86,82 +8,127 @@ const VotePage = () => {
   const [selectedOptions, setSelectedOptions] = useState([]);
   const [voted, setVoted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [passwordPrompt, setPasswordPrompt] = useState(false);
+  const [password, setPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
 
-  useEffect(() => {
-    axios.get(`http://localhost:5000/api/polls/${pollId}`)
+  const fetchPoll = useCallback((pwd) => {
+    setLoading(true);
+    axios.get(`http://localhost:5000/api/polls/${pollId}`, {
+      headers: pwd ? { 'x-poll-password': pwd } : {}
+    })
       .then(res => {
         setPoll(res.data);
+        setPasswordPrompt(false);
+        setPasswordError('');
       })
-      .catch(err => console.error('Error fetching poll:', err));
+      .catch(err => {
+        if (err.response) {
+          setPasswordPrompt(true);
+          if (err.response.status === 401) {
+            setPasswordError('Password required');
+          } else {
+            setPasswordError('incorrect password.');
+          }
+          setPoll(null);
+        } else {
+          console.error('Error fetching poll:', err);
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [pollId]);
 
-  const handleSelect = (optionId) => {
+  useEffect(() => {
+    fetchPoll();
+  }, [fetchPoll]);
+
+  const handleOptionChange = (optionId) => {
+    if (!poll) return;
     if (poll.type === 'single') {
       setSelectedOptions([optionId]);
     } else {
-      // Toggle checkboxes
-      setSelectedOptions((prev) =>
-        prev.includes(optionId)
-          ? prev.filter(id => id !== optionId)
-          : [...prev, optionId]
-      );
+      if (selectedOptions.includes(optionId)) {
+        setSelectedOptions(selectedOptions.filter(id => id !== optionId));
+      } else {
+        setSelectedOptions([...selectedOptions, optionId]);
+      }
     }
   };
 
   const handleVote = () => {
     if (selectedOptions.length === 0) {
-      return alert("Select at least one option.");
+      alert('Please select at least one option');
+      return;
     }
 
-    setLoading(true);
-    axios.post(`http://localhost:5000/api/polls/${pollId}/vote`, { optionIds: selectedOptions })
+    axios.post(`http://localhost:5000/api/polls/${pollId}/vote`, {
+      optionIds: selectedOptions
+    }, {
+      headers: password ? { 'x-poll-password': password } : {}
+    })
       .then(() => {
         setVoted(true);
-        setLoading(false);
-        alert('Vote recorded!');
       })
       .catch(err => {
-        console.error('Voting failed:', err);
-        alert('Voting failed. Please try again.');
-        setLoading(false);
+        alert('Failed to submit vote');
+        console.error(err);
       });
   };
 
+  const handlePasswordSubmit = () => {
+    fetchPoll(password);
+  };
+
+  if (loading) return <p>Loading...</p>;
+
+  if (passwordPrompt) {
+    return (
+      <div>
+        <h3>This poll is private. Please enter password:</h3>
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button onClick={handlePasswordSubmit}>Submit</button>
+        {passwordError && <p style={{ color: 'red' }}>{passwordError}</p>}
+      </div>
+    );
+  }
+
   if (!poll) return <p>Loading poll...</p>;
+
+  if (voted) return (
+    <div>
+      <h2>Thank you for voting!</h2>
+      <Link to={`/poll/${pollId}/results`}>View Results</Link>
+    </div>
+  );
 
   return (
     <div>
       <h2>{poll.question}</h2>
-
-      {poll.options && poll.options.length > 0 ? (
-        poll.options.map(opt => (
+      <form>
+        {poll.options.map(opt => (
           <div key={opt.id}>
-            <input
-              type={poll.type === 'single' ? 'radio' : 'checkbox'}
-              name="option"
-              value={opt.id}
-              checked={selectedOptions.includes(opt.id)}
-              onChange={() => handleSelect(opt.id)}
-            />
-            {opt.option_text}
+            <label>
+              <input
+                type={poll.type === 'single' ? 'radio' : 'checkbox'}
+                name="pollOption"
+                value={opt.id}
+                checked={selectedOptions.includes(opt.id)}
+                onChange={() => handleOptionChange(opt.id)}
+              />
+              {opt.option_text}
+            </label>
           </div>
-        ))
-      ) : (
-        <p>No options available for this poll.</p>
-      )}
-
-      <button onClick={handleVote} disabled={loading}>
-        {loading ? 'Submitting...' : 'Submit Vote'}
-      </button>
-
-      {voted && (
-        <div style={{ marginTop: '20px' }}>
-          <Link to={`/poll/${pollId}/results`}>View Results</Link>
-        </div>
-      )}
+        ))}
+      </form>
+      <button onClick={handleVote}>Vote</button>
     </div>
   );
 };
 
 export default VotePage;
-

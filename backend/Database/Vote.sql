@@ -6,7 +6,8 @@ CREATE TABLE polls (
     id INT AUTO_INCREMENT PRIMARY KEY,
     question VARCHAR(255) NOT NULL,
     is_public BOOLEAN NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    password VARCHAR(255)
 );
 
 -- Table to store poll options (answers)
@@ -23,7 +24,7 @@ CREATE TABLE votes (
   poll_id INT,
   option_id INT,
   FOREIGN KEY (poll_id) REFERENCES polls(id),
-  FOREIGN KEY (option_id) REFERENCES options(id)
+  FOREIGN KEY (option_id) REFERENCES poll_options(id)
 );
 
 -- pdate your polls table to include start_time and end_time for Timed Polls & Deadlines
@@ -34,5 +35,3 @@ ADD COLUMN end_time DATETIME;
 -- Update your polls table to include a type field for Multiple Question Types (Checkboxes/Multiple Choice)
 ALTER TABLE polls 
 ADD COLUMN type ENUM('single', 'multiple') DEFAULT 'single';
-
-
