@@ -7,12 +7,7 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-const db = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Juninho99@',
-    database: 'polling_system'
-});
+const db = mysql.createConnection('mysql://root:mXOPvBaJamJciLMucJEhCMMPPDHRYpDj@nozomi.proxy.rlwy.net:43221/polling_system');
 
 db.connect((err) => {
     if (err) {
