@@ -82,7 +82,9 @@ function checkPollPassword(req, res, next) {
 
 // Get active polls - only return public polls here
 app.get('/api/polls', (req, res) => {
-    const now = new Date();
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+    console.log('Server UTC time for active polls check:', now);
+
     const query = `
         SELECT * FROM polls
         WHERE start_time <= ?
@@ -90,7 +92,7 @@ app.get('/api/polls', (req, res) => {
     `;
     db.query(query, [now, now], (err, result) => {
         if (err) {
-            console.error(err);
+            console.error('Error fetching active polls:', err);
             return res.status(500).json({ message: 'Failed to fetch polls' });
         }
         res.json(result);
@@ -213,6 +215,8 @@ app.get('/api/polls/:pollId/results', checkPollPassword, (req, res) => {
     });
 });
 
-app.listen(5000, () => {
-    console.log('Server is running on http://localhost:5000');
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
