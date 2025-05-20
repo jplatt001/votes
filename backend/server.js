@@ -4,7 +4,20 @@ const bodyParser = require('body-parser');
 const mysql = require('mysql2');
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = ['http://localhost:3000', 'https://votes-production-4cf2.up.railway.app'];
+
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+}));
+
 app.use(bodyParser.json());
 
 const db = mysql.createConnection('mysql://root:mXOPvBaJamJciLMucJEhCMMPPDHRYpDj@nozomi.proxy.rlwy.net:43221/polling_system');
@@ -217,7 +230,6 @@ app.get('/api/polls/:pollId/results', checkPollPassword, (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
-// test change
